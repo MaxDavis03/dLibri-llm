@@ -2,6 +2,7 @@ import re
 import subprocess
 from pathlib import Path
 import fitz  # PyMuPDF
+import time
 
 INPUT_FOLDER = Path("input-files")
 OUTPUT_FOLDER = Path("output-files")
@@ -11,7 +12,9 @@ OUTPUT_FOLDER = Path("output-files")
 # -------------------------
 def make_safe_filename(name: str) -> str:
     """Sanitize a filename by removing unsafe characters."""
-    return re.sub(r'[\\/*?:"<>|]', "", name)
+    name = name.split('\n')[0]  # Only the first line
+    name = re.sub(r'[\\/*?:"<>|]', "", name)  # Remove forbidden characters
+    return name.strip()
 
 # -------------------------
 # File Processing
@@ -59,7 +62,7 @@ Document content:
             ["ollama", "run", "mistral"],
             input=prompt.encode(),
             capture_output=True,
-            timeout=60
+            timeout=600
         )
         return result.stdout.decode().strip()
     except Exception as e:
@@ -92,7 +95,11 @@ def process_all_files():
     for file in INPUT_FOLDER.rglob("*.*"):
         pdf_path = convert_to_pdf(file)
         if pdf_path:
+            print(f"Processing file: {pdf_path.name}")
+            start_time = time.time()
             rename_pdf_file(pdf_path)
+            end_time = time.time()
+            print(f"Processed {pdf_path.name} in {end_time - start_time:.2f} seconds\n")
 
 if __name__ == "__main__":
     if not INPUT_FOLDER.exists():
